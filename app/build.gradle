@@ -1,1 +1,11 @@
-minSdkVersion 25
+android {
+    compileSdkVersion 30
+    defaultConfig {
+        applicationId "com.example.app"
+        minSdkVersion 19
+        targetSdkVersion 30
+        versionCode 1
+        versionName "1.0"
+    }
+    ...
+}
