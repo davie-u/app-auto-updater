@@ -16,6 +16,7 @@ import androidx.core.content.FileProvider
 import com.example.appautoupdater.ui.theme.AppUpdateManagerTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
 import java.io.File
 
 class MainActivity : ComponentActivity() {private val githubService = Retrofit.Builder()
@@ -27,13 +28,26 @@ class MainActivity : ComponentActivity() {private val githubService = Retrofit.B
         super.onCreate(savedInstanceState)
         setContent {
             AppUpdateManagerTheme {
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    UpdateScreen(onInstallRequested = { file -> installApk(file) })
-                }
+             UpdateScreen(onInstallRequested = { file -> installApk(file) })
+                    }
             }
         }
     }
-
+private suspend fun downloadUpdate(url: String): File? {
+    return withContext(Dispatchers.IO) {
+        try {
+            val destination = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "update.apk")
+            URL(url).openStream().use { input ->
+                destination.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+            destination
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
     // This function talks to the Android System to launch the installer
     private fun installApk(file: File) {
         val uri: Uri = FileProvider.getUriForFile(
