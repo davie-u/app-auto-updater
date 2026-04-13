@@ -14,10 +14,71 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.example.appautoupdater.ui.theme.AppUpdateManagerTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
+import java.net.URL
+
+class MainActivity : ComponentActivity() {
+
+    // 1. Networking Engine
+    private val githubService = Retrofit.Builder()
+        .baseUrl("https://api.github.com/")
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+        .create(GitHubService::class.java)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            AppUpdateManagerTheme {
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                    UpdateScreen(onInstallRequested = { file -> installApk(file) })
+                }
+            }
+        }
+    }
+
+    // 2. Real Downloader Logic
+    private suspend fun downloadUpdate(url: String): File? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val destination = File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "update.apk")
+                URL(url).openStream().use { input ->
+                    destination.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                destination
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    // 3. Android Installer Logic
+    private fun installApk(file: File) {
+        val uri: Uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        startActivity(intent)
+    }
+}
+
+@Composable
+fun UpdateScreen(onInstallRequested: (File) -> Unit) {
+    // Note: In a real app, you'd call downloadUpdate through a ViewModel, 
+    // but for this project, we are keeping the logic simple.
+    
+    // ... your UpdateScreen code with the Button logic we finished ...
+}
 
 class MainActivity : ComponentActivity() {private val githubService = Retrofit.Builder()
         .baseUrl("https://api.github.com/")
