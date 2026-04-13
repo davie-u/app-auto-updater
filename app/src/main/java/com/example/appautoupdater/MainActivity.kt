@@ -70,17 +70,31 @@ fun UpdateScreen(onInstallRequested: (File) -> Unit) {
             Spacer(modifier = Modifier.height(8.dp))
             Text("${(progress * 100).toInt()}%")
         } else {
-            Button(onClick = {
-                isDownloading = true
-                scope.launch {
-                    // This loop simulates a download taking 5 seconds
-                    for (i in 1..10) {
-                        delay(500) 
-                        progress = i / 10f
-                        status = "Downloading patch... ${i*10}%"
-                    }
-                    status = "Download Complete!"
-                    isDownloading = false
+           Button(onClick = {
+    isDownloading = true
+    scope.launch {
+        try {
+            status = "Checking GitHub..."
+            // This calls the service you just added at the top!
+            val release = githubService.getLatestRelease() 
+            
+            // This looks for the first file that ends in .apk
+            val apkUrl = release.assets.find { it.name.endsWith(".apk") }?.browser_download_url
+            
+            if (apkUrl != null) {
+                status = "Update Found: ${release.tag_name}. Ready to download."
+                // In the next step, we'll add the downloader!
+            } else {
+                status = "No APK file found in this release."
+            }
+        } catch (e: Exception) {
+            status = "Error: Check your internet connection."
+        }
+        isDownloading = false
+    }
+}) {
+    Text("Check for Patches")
+}
                     
                     // This looks for the file to install (Make sure the file exists or change the path!)
                     val updateFile = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "update.apk")
