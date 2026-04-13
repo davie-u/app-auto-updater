@@ -22,6 +22,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.File
 import java.net.URL
+import androidx.compose.ui.tooling.preview.Preview
 
 class MainActivity : ComponentActivity() {
 
@@ -157,27 +158,28 @@ fun UpdateScreen(onInstallRequested: (File) -> Unit) {
             val apkUrl = release.assets.find { it.name.endsWith(".apk") }?.browser_download_url
             
             if (apkUrl != null) {
-                status = "Update Found: ${release.tag_name}. Ready to download."
-                // In the next step, we'll add the downloader!
-            } else {
-                status = "No APK file found in this release."
-            }
-        } catch (e: Exception) {
-            status = "Error: Check your internet connection."
-        }
-        isDownloading = false
-    }
-}) {
-    Text("Check for Patches")
-}
-                    
-                    // This looks for the file to install (Make sure the file exists or change the path!)
-                    val updateFile = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "update.apk")
-                    onInstallRequested(updateFile)
-                }
-            }) {
-                Text("Start Simulated Update")
-            }
-        }
+                if (apkUrl != null) {
+    status = "Downloading patch..."
+    // This part actually grabs the file from GitHub
+    val downloadedFile = downloadUpdate(apkUrl) 
+    
+    if (downloadedFile != null) {
+        status = "Download complete! Installing..."
+        onInstallRequested(downloadedFile) // This opens the Android installer
+    } else {
+        status = "Download failed. Try again."
     }
 }
+      }
+    }       
+ }                                                        
+           @Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun UpdateScreenPreview() {
+    AppUpdateManagerTheme {
+        // We pass an empty { } because the preview doesn't actually install anything
+        UpdateScreen(onInstallRequested = { })
+    }
+} }
+        }
+    }
